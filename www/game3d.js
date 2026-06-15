@@ -67,21 +67,33 @@ window.addEventListener("resize", resize);
 // ---- pip textures + die mesh ----------------------------------
 const PIP_SLOTS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 const FACE_COLOR = { 2: "#f4a259", 3: "#2ec4b6", 4: "#4895ef", 5: "#ef476f", 6: "#9b5de5", 1: "#e9c46a" };
+// luminance of a #rrggbb colour (0 dark .. 1 light)
+function luminance(hex) {
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
 const texCache = {};
 function pipTexture(value) {
   if (texCache[value]) return texCache[value];
   const N = 128, cv = document.createElement("canvas");
   cv.width = cv.height = N;
   const ctx = cv.getContext("2d");
-  ctx.fillStyle = FACE_COLOR[value] || "#ddd";
-  roundRect(ctx, 4, 4, N - 8, N - 8, 22); ctx.fill();
+  const face = FACE_COLOR[value] || "#ddd";
+  roundRect(ctx, 4, 4, N - 8, N - 8, 22);
+  ctx.fillStyle = face; ctx.fill();
   ctx.strokeStyle = "rgba(0,0,0,0.18)"; ctx.lineWidth = 4; ctx.stroke();
+  // dark pips on light faces (1,2), light pips on dark faces — plus a thin
+  // contrasting halo so the dots stay crisp on every colour.
+  const light = luminance(face) > 0.6;
+  const pip = light ? "#241a02" : "#fffdf5";
+  const halo = light ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.32)";
   const pos = [0.27, 0.5, 0.73];
-  ctx.fillStyle = "#fffdf5";
   for (const slot of PIP_SLOTS[value]) {
+    const x = pos[slot % 3] * N, y = pos[(slot / 3) | 0] * N;
     ctx.beginPath();
-    ctx.arc(pos[slot % 3] * N, pos[(slot / 3) | 0] * N, N * 0.085, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(x, y, N * 0.092, 0, Math.PI * 2);
+    ctx.fillStyle = pip; ctx.fill();
+    ctx.lineWidth = N * 0.018; ctx.strokeStyle = halo; ctx.stroke();
   }
   const tex = new THREE.CanvasTexture(cv);
   texCache[value] = tex;
