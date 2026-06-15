@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1230" />
+  <title>Dice Match 3D</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="hud">
+      <div id="hud-1p" class="hud-set">
+        <div class="hud-item">
+          <span class="hud-label">LEVEL</span>
+          <span id="level">1</span><span class="hud-sub">/50</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">남은 주사위</span>
+          <span id="left">0</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">최소 수</span>
+          <span id="par">0</span>
+        </div>
+      </div>
+      <div id="hud-2p" class="hud-set">
+        <div class="hud-item p1">
+          <span class="hud-label">PLAYER 1</span>
+          <span id="p1score">0</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">남은 주사위</span>
+          <span id="battle-left">0</span>
+        </div>
+        <div class="hud-item p2">
+          <span class="hud-label">PLAYER 2</span>
+          <span id="p2score">0</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="stage">
+      <canvas id="scene"></canvas>
+    </main>
+
+    <p id="hint">방향을 누르면 캐릭터가 탄 주사위가 <b>굴러갑니다</b> (윗면 숫자가 바뀜).<br/>같은 숫자를 그 수만큼 모아 <b>보드의 주사위를 전부 없애면</b> 클리어!</p>
+
+    <nav id="pad" class="pad p1" aria-label="player 1 direction pad">
+      <button class="dir" data-player="0" data-dir="north">▲</button>
+      <div class="pad-mid">
+        <button class="dir" data-player="0" data-dir="west">◀</button>
+        <button class="dir" data-player="0" data-dir="east">▶</button>
+      </div>
+      <button class="dir" data-player="0" data-dir="south">▼</button>
+    </nav>
+
+    <nav id="pad2" class="pad p2" aria-label="player 2 direction pad">
+      <button class="dir" data-player="1" data-dir="north">▲</button>
+      <div class="pad-mid">
+        <button class="dir" data-player="1" data-dir="west">◀</button>
+        <button class="dir" data-player="1" data-dir="east">▶</button>
+      </div>
+      <button class="dir" data-player="1" data-dir="south">▼</button>
+    </nav>
+
+    <footer id="tools">
+      <button id="reset">다시</button>
+      <button id="to-menu">메뉴</button>
+    </footer>
+  </div>
+
+  <div id="menu" class="hidden">
+    <div class="menu-card">
+      <h1>DICE MATCH <span>3D</span></h1>
+      <p>모드를 선택하세요</p>
+      <button id="menu-1p" class="menu-btn">1인 모드<small>50레벨 퍼즐</small></button>
+      <button id="menu-2p" class="menu-btn">2인 모드<small>한 화면에서 주사위 대결</small></button>
+    </div>
+  </div>
+
+  <div id="overlay" class="hidden">
+    <div class="overlay-card">
+      <h1 id="overlay-title">LEVEL CLEAR</h1>
+      <p id="overlay-text"></p>
+      <button id="overlay-btn">다음 레벨</button>
+    </div>
+  </div>
+
+  <script src="lib/three.min.js"></script>
+  <script src="engine.js"></script>
+  <script src="levels.js"></script>
+  <script src="game3d.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1230" />
+  <title>Dice Match</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="hud">
+      <div class="hud-item">
+        <span class="hud-label">LEVEL</span>
+        <span id="level">1</span><span class="hud-sub">/100</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">SCORE</span>
+        <span id="score">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">GOAL</span>
+        <span id="cleared">0</span><span class="hud-sub">/<span id="goal">6</span></span>
+      </div>
+    </header>
+
+    <main id="stage">
+      <div id="board" aria-label="dice board"></div>
+    </main>
+
+    <p id="hint">주사위를 손가락으로 <b>밀어(스와이프)</b> 빈 칸으로 굴리세요.<br/>같은 숫자가 그 숫자만큼 모이면 사라집니다.</p>
+
+    <nav id="pad" aria-label="direction pad">
+      <button class="dir" data-dir="north">▲</button>
+      <div class="pad-mid">
+        <button class="dir" data-dir="west">◀</button>
+        <button class="dir" data-dir="east">▶</button>
+      </div>
+      <button class="dir" data-dir="south">▼</button>
+    </nav>
+
+    <footer id="tools">
+      <button id="reset">레벨 다시</button>
+    </footer>
+  </div>
+
+  <div id="overlay" class="hidden">
+    <div class="overlay-card">
+      <h1 id="overlay-title">LEVEL CLEAR</h1>
+      <p id="overlay-text"></p>
+      <button id="overlay-btn">다음 레벨</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

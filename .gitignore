@@ -1,0 +1,18 @@
+# dependencies
+node_modules/
+
+# Capacitor / Gradle build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/app/src/main/assets/public/
+android/local.properties
+.gradle/
+
+# OS / editor
+.DS_Store
+*.log
+
+# NOTE: debug APKs in the repo root (DiceMatch3D-debug.apk) are intentionally
+# committed so they can be downloaded directly from the public repo.

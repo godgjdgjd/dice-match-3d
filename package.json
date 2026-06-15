@@ -1,0 +1,22 @@
+{
+  "name": "dice-match",
+  "version": "0.1.0",
+  "description": "A Devil Dice inspired dice-matching puzzle sample (Android/iOS via Capacitor).",
+  "private": true,
+  "scripts": {
+    "serve": "npx serve www",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync": "npx cap sync",
+    "open:android": "npx cap open android",
+    "open:ios": "npx cap open ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  }
+}
