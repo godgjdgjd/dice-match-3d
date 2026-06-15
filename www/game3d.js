@@ -143,7 +143,7 @@ characters.forEach((c) => scene.add(c));
 
 // ---- game state -----------------------------------------------
 // mode: "1p" (level progression) | "2p" (shared-board battle)
-const game = { mode: "1p", idx: 1, st: null, meshAt: [], par: 0, busy: false };
+const game = { mode: "1p", idx: 1, st: null, meshAt: [], par: 0 };
 // per-player {r,c}; 1P uses only index 0 and mirrors game.st.char
 function charRC(pi) { return game.mode === "2p" ? game.st.chars[pi] : game.st.char; }
 function activePlayers() { return game.mode === "2p" ? [0, 1] : [0]; }
@@ -185,8 +185,7 @@ function loadLevel(idx) {
   characters[0].visible = true;
   characters[1].visible = false;
   characters[0].position.copy(charPosOn(game.st.char.r, game.st.char.c));
-  game.busy = false;
-  inputQueue.length = 0;
+  clearLocks();
   setMode2pUI(false);
   updateHUD();
 }
@@ -200,8 +199,7 @@ function startBattle() {
   buildBoardMeshes();
   characters.forEach((c) => (c.visible = true));
   for (const pi of [0, 1]) characters[pi].position.copy(charPosOn(game.st.chars[pi].r, game.st.chars[pi].c));
-  game.busy = false;
-  inputQueue.length = 0;
+  clearLocks();
   setMode2pUI(true);
   updateHUD();
 }
@@ -270,7 +268,7 @@ function animTumble(ev, cb) {
   const charTo = charPosOn(to.r, to.c);
   const charFroms = carried.map((pi) => characters[pi].position.clone());
   const q = new THREE.Quaternion();
-  addTween(200, (t) => {
+  addTween(150, (t) => {
     const e = easeInOut(t);
     q.setFromAxisAngle(axis, (Math.PI / 2) * e);
     mesh.position.copy(startPos).sub(pivot).applyQuaternion(q).add(pivot);
@@ -322,7 +320,7 @@ function playEvents(events, i, done) {
   if (i >= events.length) { done(); return; }
   const ev = events[i];
   const next = () => playEvents(events, i + 1, done);
-  if (ev.type === "hop") charArc(ev.player || 0, characters[ev.player || 0].position.clone(), charPosOn(ev.to.r, ev.to.c), 220, next);
+  if (ev.type === "hop") charArc(ev.player || 0, characters[ev.player || 0].position.clone(), charPosOn(ev.to.r, ev.to.c), 170, next);
   else if (ev.type === "roll") animTumble(ev, next);
   else if (ev.type === "round") animRound(ev, next);
   else next();
@@ -333,8 +331,30 @@ function playEvents(events, i, done) {
 // presses are QUEUED instead of dropped — so two players mashing their pads at
 // the same instant both register and play back-to-back. The queue is capped so
 // a held/spammed button can't buffer a huge backlog.
+// Concurrency model: instead of one global lock, each player has their own
+// lock and every in-flight animation reserves the board cells it touches. A
+// queued press dispatches the moment its player is free AND none of the cells
+// its move would touch are reserved — so two players in different regions roll
+// at the same time, and we only serialise when their moves actually overlap.
 const inputQueue = [];
 const QUEUE_MAX = 8;
+const busyPlayer = [false, false];
+const busyCells = new Set();
+function anyBusy() { return busyPlayer[0] || busyPlayer[1]; }
+function ckey(r, c) { return r * 1000 + c; }
+function eventCells(events) {
+  const set = new Set();
+  const add = (p) => p && set.add(ckey(p.r, p.c));
+  for (const ev of events) {
+    add(ev.from); add(ev.to);
+    if (ev.clears) for (const [r, c] of ev.clears) set.add(ckey(r, c));
+    if (ev.relocations) for (const rl of ev.relocations) { add(rl.from); add(rl.to); }
+    if (ev.relocate) { add(ev.relocate.from); add(ev.relocate.to); }
+  }
+  return set;
+}
+function clearLocks() { busyPlayer[0] = busyPlayer[1] = false; busyCells.clear(); inputQueue.length = 0; }
+
 function requestMove(player, dir) {
   if (!overlay.classList.contains("hidden")) return; // ignore during menu / win card
   if (inputQueue.length >= QUEUE_MAX) return;
@@ -342,21 +362,31 @@ function requestMove(player, dir) {
   pump();
 }
 function pump() {
-  if (game.busy) return;
-  const m = inputQueue.shift();
-  if (!m) return;
-  const res = game.mode === "2p"
-    ? Engine.applyBattleMove(game.st, m.player, m.dir)
-    : Engine.applyMove(game.st, m.dir);
-  if (!res) { pump(); return; } // illegal (wall / nothing to roll): skip, try next
-  game.busy = true;
-  game.st = res.next;
-  updateHUD();
-  playEvents(res.events, 0, () => {
-    game.busy = false;
-    if (Engine.isEmpty(game.st)) { inputQueue.length = 0; modeComplete(); return; }
-    pump(); // drain any presses that arrived during the animation
-  });
+  // dispatch every queued press that can run right now without a cell conflict
+  for (let i = 0; i < inputQueue.length; ) {
+    const m = inputQueue[i];
+    if (busyPlayer[m.player]) { i++; continue; } // this player is still animating
+    const res = game.mode === "2p"
+      ? Engine.applyBattleMove(game.st, m.player, m.dir)
+      : Engine.applyMove(game.st, m.dir);
+    if (!res) { inputQueue.splice(i, 1); continue; } // illegal: drop it
+    const cells = eventCells(res.events);
+    let conflict = false;
+    for (const k of cells) if (busyCells.has(k)) { conflict = true; break; }
+    if (conflict) { i++; continue; } // overlaps an in-flight animation; wait
+
+    inputQueue.splice(i, 1);
+    game.st = res.next;
+    updateHUD();
+    busyPlayer[m.player] = true;
+    cells.forEach((k) => busyCells.add(k));
+    playEvents(res.events, 0, () => {
+      busyPlayer[m.player] = false;
+      cells.forEach((k) => busyCells.delete(k));
+      if (Engine.isEmpty(game.st)) { clearLocks(); modeComplete(); return; }
+      pump();
+    });
+  }
 }
 
 // Per-button pointer events give true multi-touch: each finger landing on a
@@ -389,8 +419,7 @@ canvas.addEventListener("pointerup", (e) => {
   else requestMove(0, dy > 0 ? "south" : "north");
 });
 document.getElementById("reset").addEventListener("click", () => {
-  inputQueue.length = 0;
-  if (game.busy) return;
+  if (anyBusy()) return;
   if (game.mode === "2p") startBattle(); else loadLevel(game.idx);
 });
 
@@ -429,13 +458,13 @@ function showMenu() {
 }
 document.getElementById("menu-1p").addEventListener("click", () => { menu.classList.add("hidden"); loadLevel(1); });
 document.getElementById("menu-2p").addEventListener("click", () => { menu.classList.add("hidden"); startBattle(); });
-document.getElementById("to-menu").addEventListener("click", () => { if (!game.busy) showMenu(); });
+document.getElementById("to-menu").addEventListener("click", () => { if (!anyBusy()) showMenu(); });
 
 // ---- main loop -------------------------------------------------
 function animate(now) {
   for (let i = tweens.length - 1; i >= 0; i--) if (tweens[i].step(now)) tweens.splice(i, 1);
-  if (!game.busy && game.st)
-    for (const pi of activePlayers()) characters[pi].position.y = 1.0 + Math.sin(now * 0.004) * 0.04;
+  if (game.st)
+    for (const pi of activePlayers()) if (!busyPlayer[pi]) characters[pi].position.y = 1.0 + Math.sin(now * 0.004) * 0.04;
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
