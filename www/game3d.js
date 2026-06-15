@@ -186,6 +186,7 @@ function loadLevel(idx) {
   characters[1].visible = false;
   characters[0].position.copy(charPosOn(game.st.char.r, game.st.char.c));
   game.busy = false;
+  inputQueue.length = 0;
   setMode2pUI(false);
   updateHUD();
 }
@@ -200,6 +201,7 @@ function startBattle() {
   characters.forEach((c) => (c.visible = true));
   for (const pi of [0, 1]) characters[pi].position.copy(charPosOn(game.st.chars[pi].r, game.st.chars[pi].c));
   game.busy = false;
+  inputQueue.length = 0;
   setMode2pUI(true);
   updateHUD();
 }
@@ -327,31 +329,54 @@ function playEvents(events, i, done) {
 }
 
 // ---- input -----------------------------------------------------
-// A single busy lock serialises moves; in 2P this briefly blocks the other
-// player while an animation plays (~200ms), which keeps the shared board sane.
-function move(player, dir) {
-  if (game.busy || !overlay.classList.contains("hidden")) return;
+// A single busy lock serialises board mutations (cascades are stateful), but
+// presses are QUEUED instead of dropped — so two players mashing their pads at
+// the same instant both register and play back-to-back. The queue is capped so
+// a held/spammed button can't buffer a huge backlog.
+const inputQueue = [];
+const QUEUE_MAX = 8;
+function requestMove(player, dir) {
+  if (!overlay.classList.contains("hidden")) return; // ignore during menu / win card
+  if (inputQueue.length >= QUEUE_MAX) return;
+  inputQueue.push({ player, dir });
+  pump();
+}
+function pump() {
+  if (game.busy) return;
+  const m = inputQueue.shift();
+  if (!m) return;
   const res = game.mode === "2p"
-    ? Engine.applyBattleMove(game.st, player, dir)
-    : Engine.applyMove(game.st, dir);
-  if (!res) return;
+    ? Engine.applyBattleMove(game.st, m.player, m.dir)
+    : Engine.applyMove(game.st, m.dir);
+  if (!res) { pump(); return; } // illegal (wall / nothing to roll): skip, try next
   game.busy = true;
   game.st = res.next;
   updateHUD();
   playEvents(res.events, 0, () => {
     game.busy = false;
-    if (Engine.isEmpty(game.st)) modeComplete();
+    if (Engine.isEmpty(game.st)) { inputQueue.length = 0; modeComplete(); return; }
+    pump(); // drain any presses that arrived during the animation
   });
 }
 
-// player 0 pad uses .dir[data-player="0"] (or no attr); player 1 uses data-player="1"
-document.querySelectorAll(".dir").forEach((b) =>
-  b.addEventListener("click", () => move(+(b.dataset.player || 0), b.dataset.dir)));
+// Per-button pointer events give true multi-touch: each finger landing on a
+// pad button fires its own pointerdown, so both pads work simultaneously.
+document.querySelectorAll(".dir").forEach((b) => {
+  b.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    b.classList.add("pressing");
+    requestMove(+(b.dataset.player || 0), b.dataset.dir);
+  });
+  const release = () => b.classList.remove("pressing");
+  b.addEventListener("pointerup", release);
+  b.addEventListener("pointercancel", release);
+  b.addEventListener("pointerleave", release);
+});
 document.addEventListener("keydown", (e) => {
   const p0 = { ArrowUp: "north", ArrowDown: "south", ArrowLeft: "west", ArrowRight: "east" };
   const p1 = { w: "north", s: "south", a: "west", d: "east", W: "north", S: "south", A: "west", D: "east" };
-  if (p0[e.key]) { e.preventDefault(); move(0, p0[e.key]); }
-  else if (game.mode === "2p" && p1[e.key]) { e.preventDefault(); move(1, p1[e.key]); }
+  if (p0[e.key]) { e.preventDefault(); requestMove(0, p0[e.key]); }
+  else if (game.mode === "2p" && p1[e.key]) { e.preventDefault(); requestMove(1, p1[e.key]); }
 });
 // swipe on the board only drives player 0 (2P should use the on-screen pads)
 let sp = null;
@@ -360,10 +385,11 @@ canvas.addEventListener("pointerup", (e) => {
   if (!sp) return;
   const dx = e.clientX - sp.x, dy = e.clientY - sp.y; sp = null;
   if (Math.hypot(dx, dy) < 24) return;
-  if (Math.abs(dx) > Math.abs(dy)) move(0, dx > 0 ? "east" : "west");
-  else move(0, dy > 0 ? "south" : "north");
+  if (Math.abs(dx) > Math.abs(dy)) requestMove(0, dx > 0 ? "east" : "west");
+  else requestMove(0, dy > 0 ? "south" : "north");
 });
 document.getElementById("reset").addEventListener("click", () => {
+  inputQueue.length = 0;
   if (game.busy) return;
   if (game.mode === "2p") startBattle(); else loadLevel(game.idx);
 });
