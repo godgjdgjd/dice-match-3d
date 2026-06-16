@@ -93,11 +93,12 @@
     return true;
   }
 
-  // connected (4-neighbour) groups of equal top value. A group clears only when
-  // its size is EXACTLY its value AND it is fully isolated (no other die touches
-  // it). `riders` are the character positions that "count" for the v===1
-  // exception (a lone 1 also needs a rider); defaults to the single-player char.
-  function findClears(st, riders) {
+  // connected (4-neighbour) groups of equal top value. A group clears when its
+  // size is EXACTLY its value. By default it must also be fully isolated (no
+  // other die touches it); pass `relaxed` (battle mode) to drop that isolation
+  // requirement for v>=2. A lone 1 always needs a rider AND isolation in both
+  // modes. `riders` defaults to the single-player char.
+  function findClears(st, riders, relaxed) {
     riders = riders || (st.char ? [st.char] : []);
     const seen = Array.from({ length: st.rows }, () => Array(st.cols).fill(false));
     const out = [];
@@ -121,11 +122,11 @@
         // Clear a group only when its size is EXACTLY v AND it is fully
         // isolated (no other die touches it). v === 1 additionally needs a
         // character riding it.
-        if (group.length === v && groupIsolated(st, group)) {
+        if (group.length === v) {
           if (v === 1) {
             const [gr, gc] = group[0];
-            if (riders.some((p) => p && p.r === gr && p.c === gc)) out.push(...group);
-          } else {
+            if (groupIsolated(st, group) && riders.some((p) => p && p.r === gr && p.c === gc)) out.push(...group);
+          } else if (relaxed || groupIsolated(st, group)) {
             out.push(...group);
           }
         }
@@ -278,7 +279,7 @@
     // repick tops until the board starts with no ready-to-clear group
     let guard = 0;
     while (guard++ < 300) {
-      const clears = findClears(st, st.chars);
+      const clears = findClears(st, st.chars, true); // battle: relaxed (no isolation)
       if (clears.length === 0) break;
       for (const [r, c] of clears) st.board[r][c] = randomOrientation(values[(rnd() * values.length) | 0], rnd);
     }
@@ -315,7 +316,7 @@
     events.push({ type: "roll", player: pi, from: { r: cr, c: cc }, to: { r: nr, c: nc }, carried });
 
     while (true) {
-      const clears = findClears(next, next.chars);
+      const clears = findClears(next, next.chars, true); // battle: relaxed (no isolation)
       if (clears.length === 0) break;
       const exclude = new Set(clears.map(([r, c]) => r * next.cols + c));
       for (const [r, c] of clears) next.board[r][c] = null;
