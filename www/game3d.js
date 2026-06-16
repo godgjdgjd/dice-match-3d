@@ -377,12 +377,20 @@ function addTween(dur, onUpdate, onDone) {
 }
 const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
+// a character's "front" is +z; face the screen direction it moves in
+function faceAngle(dx, dz) { return Math.atan2(dx, dz); }
+function shortenAngle(d) { while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }
+
 function charArc(pi, from, to, dur, cb) {
   const ch = characters[pi];
+  const a0 = ch.rotation.y;
+  const dx = to.x - from.x, dz = to.z - from.z;
+  const da = (Math.abs(dx) > 1e-4 || Math.abs(dz) > 1e-4) ? shortenAngle(faceAngle(dx, dz) - a0) : 0;
   addTween(dur, (t) => {
     const e = easeInOut(t);
     ch.position.lerpVectors(from, to, e);
     ch.position.y = from.y * (1 - e) + to.y * e + Math.sin(t * Math.PI) * 0.32;
+    ch.rotation.y = a0 + da * e;
   }, cb);
 }
 
@@ -408,7 +416,11 @@ function animTumble(ev, cb) {
 
   const startPos = mesh.position.clone(), startQuat = mesh.quaternion.clone();
   const charTo = charPosOn(to.r, to.c);
+  const tc = cellCenter(to.r, to.c);
+  const faceA = faceAngle(tc.x - fc.x, tc.z - fc.z);
   const charFroms = carried.map((pi) => characters[pi].position.clone());
+  const a0s = carried.map((pi) => characters[pi].rotation.y);
+  const das = a0s.map((a) => shortenAngle(faceA - a));
   const q = new THREE.Quaternion();
   addTween(150, (t) => {
     const e = easeInOut(t);
@@ -419,6 +431,7 @@ function animTumble(ev, cb) {
       const ch = characters[pi];
       ch.position.lerpVectors(charFroms[i], charTo, e);
       ch.position.y = charFroms[i].y * (1 - e) + charTo.y * e + Math.sin(t * Math.PI) * 0.22;
+      ch.rotation.y = a0s[i] + das[i] * e;
     });
   }, () => {
     mesh.position.copy(cellCenter(to.r, to.c));
