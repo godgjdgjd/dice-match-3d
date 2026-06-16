@@ -38,7 +38,7 @@ function placeCamera() {
   const widen = Math.min(1.6, Math.max(1, 1 / aspect));
   const d = camDim * widen;
   // ZOOM: smaller multipliers = camera closer = board fills more of the screen
-  camera.position.set(0, d * 1.0 + 1.8, d * 0.9 + 2.2);
+  camera.position.set(0, d * 0.85 + 1.4, d * 0.78 + 1.7);
   camera.lookAt(0, 0, 0);
 }
 
