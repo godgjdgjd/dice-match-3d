@@ -355,6 +355,7 @@ const inputQueue = [];
 const QUEUE_MAX = 8;
 const busyPlayer = [false, false];
 const busyCells = new Set();
+const heldDir = [null, null]; // direction each player is currently holding
 function anyBusy() { return busyPlayer[0] || busyPlayer[1]; }
 function ckey(r, c) { return r * 1000 + c; }
 function eventCells(events) {
@@ -368,7 +369,7 @@ function eventCells(events) {
   }
   return set;
 }
-function clearLocks() { busyPlayer[0] = busyPlayer[1] = false; busyCells.clear(); inputQueue.length = 0; }
+function clearLocks() { busyPlayer[0] = busyPlayer[1] = false; busyCells.clear(); inputQueue.length = 0; heldDir[0] = heldDir[1] = null; }
 
 function requestMove(player, dir) {
   if (!overlay.classList.contains("hidden")) return; // ignore during menu / win card
@@ -399,29 +400,65 @@ function pump() {
       busyPlayer[m.player] = false;
       cells.forEach((k) => busyCells.delete(k));
       if (Engine.isEmpty(game.st)) { clearLocks(); modeComplete(); return; }
+      if (heldDir[m.player]) requestMove(m.player, heldDir[m.player]); // keep moving while held
       pump();
     });
   }
 }
 
-// Per-button pointer events give true multi-touch: each finger landing on a
-// pad button fires its own pointerdown, so both pads work simultaneously.
-document.querySelectorAll(".dir").forEach((b) => {
-  b.addEventListener("pointerdown", (e) => {
-    e.preventDefault();
-    b.classList.add("pressing");
-    requestMove(+(b.dataset.player || 0), b.dataset.dir);
+// Hold-to-move: a press sets the player's held direction, which keeps firing
+// moves until released. The repeat is driven from each move's completion (see
+// pump), so it paces with the animation and naturally stops at a wall.
+function setHeld(player, dir) {
+  if (heldDir[player] === dir) return;
+  heldDir[player] = dir;
+  if (dir && !busyPlayer[player]) requestMove(player, dir); // kick now if idle
+}
+
+// Floating joystick (Wild Rift style): the touch point becomes the centre,
+// dragging selects N/S/E/W, holding keeps moving. Each pad captures its own
+// pointer id so both joysticks can be held at the same time.
+function setupJoystick(padEl, player) {
+  if (!padEl) return;
+  const stick = padEl.querySelector(".stick");
+  const DEAD = 12, MAXR = 34;
+  let pid = null, ox = 0, oy = 0;
+  function update(dx, dy) {
+    const mag = Math.hypot(dx, dy);
+    if (stick) { const k = mag > MAXR ? MAXR / mag : 1; stick.style.transform = `translate(${dx * k}px, ${dy * k}px)`; }
+    let dir = null;
+    if (mag >= DEAD) dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "east" : "west") : (dy > 0 ? "south" : "north");
+    setHeld(player, dir);
+  }
+  function release() { pid = null; padEl.classList.remove("active"); if (stick) stick.style.transform = ""; setHeld(player, null); }
+  padEl.addEventListener("pointerdown", (e) => {
+    if (pid !== null || !overlay.classList.contains("hidden")) return;
+    pid = e.pointerId; ox = e.clientX; oy = e.clientY;
+    padEl.setPointerCapture(pid); padEl.classList.add("active");
+    e.preventDefault(); update(0, 0);
   });
-  const release = () => b.classList.remove("pressing");
-  b.addEventListener("pointerup", release);
-  b.addEventListener("pointercancel", release);
-  b.addEventListener("pointerleave", release);
-});
+  padEl.addEventListener("pointermove", (e) => {
+    if (e.pointerId !== pid) return;
+    update(e.clientX - ox, e.clientY - oy); e.preventDefault();
+  });
+  const end = (e) => { if (e.pointerId === pid) release(); };
+  padEl.addEventListener("pointerup", end);
+  padEl.addEventListener("pointercancel", end);
+}
+setupJoystick(document.getElementById("pad"), 0);
+setupJoystick(document.getElementById("pad2"), 1);
+
+const KEY0 = { ArrowUp: "north", ArrowDown: "south", ArrowLeft: "west", ArrowRight: "east" };
+const KEY1 = { w: "north", s: "south", a: "west", d: "east" };
 document.addEventListener("keydown", (e) => {
-  const p0 = { ArrowUp: "north", ArrowDown: "south", ArrowLeft: "west", ArrowRight: "east" };
-  const p1 = { w: "north", s: "south", a: "west", d: "east", W: "north", S: "south", A: "west", D: "east" };
-  if (p0[e.key]) { e.preventDefault(); requestMove(0, p0[e.key]); }
-  else if (game.mode === "2p" && p1[e.key]) { e.preventDefault(); requestMove(1, p1[e.key]); }
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (KEY0[k]) { e.preventDefault(); setHeld(0, KEY0[k]); }
+  else if (game.mode === "2p" && KEY1[k]) { e.preventDefault(); setHeld(1, KEY1[k]); }
+});
+document.addEventListener("keyup", (e) => {
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (KEY0[k]) setHeld(0, null);
+  else if (KEY1[k]) setHeld(1, null);
 });
 // swipe on the board only drives player 0 (2P should use the on-screen pads)
 let sp = null;

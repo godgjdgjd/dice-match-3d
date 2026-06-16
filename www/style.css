@@ -107,36 +107,43 @@ html, body {
   font-size: 12px; line-height: 1.4; opacity: 0.5; margin: 0;
 }
 
-/* direction pad — floating joystick-style control in a bottom corner */
+/* floating joystick (Wild Rift style): hold + drag to steer, hold to keep moving */
 .pad {
   position: absolute;
   bottom: calc(max(18px, env(safe-area-inset-bottom)) + 4px);
   z-index: 6;
-  display: flex; flex-direction: column; align-items: center; gap: 5px;
-  padding: 11px;
+  width: 122px; height: 122px;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.08), 0 6px 18px rgba(0,0,0,0.35);
+  touch-action: none;                     /* don't let the browser eat the drag */
 }
 #pad  { left:  max(20px, env(safe-area-inset-left)); }
 #pad2 { right: max(20px, env(safe-area-inset-right)); display: none; }
-body.mode-2p #pad2 { display: flex; }       /* P2 pad only appears in 2P */
-.pad { touch-action: none; }            /* don't let the browser eat multi-touch */
-.pad-mid { display: flex; gap: 40px; }
-.dir {
-  width: 40px; height: 40px;
-  border: none; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--text); font-size: 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  touch-action: none;
+body.mode-2p #pad2 { display: block; }    /* P2 joystick only appears in 2P */
+.pad .arrow {
+  position: absolute; font-size: 12px; line-height: 1; opacity: 0.32;
+  color: var(--text); pointer-events: none;
 }
-.dir:active, .dir.pressing { background: var(--accent); color: #1a1230; transform: scale(0.92); }
-/* tint each pad with its player colour */
+.pad .arrow.up    { top: 8px;    left: 50%; transform: translateX(-50%); }
+.pad .arrow.down  { bottom: 8px; left: 50%; transform: translateX(-50%); }
+.pad .arrow.left  { left: 9px;   top: 50%;  transform: translateY(-50%); }
+.pad .arrow.right { right: 9px;  top: 50%;  transform: translateY(-50%); }
+.stick {
+  position: absolute; left: 50%; top: 50%;
+  width: 50px; height: 50px; margin: -25px 0 0 -25px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.22);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 0 0 2px rgba(255,255,255,0.28);
+  pointer-events: none;
+}
+/* tint each joystick with its player colour */
 .pad.p1 { box-shadow: inset 0 0 0 2px rgba(230,57,70,0.55), 0 6px 18px rgba(0,0,0,0.35); }
 .pad.p2 { box-shadow: inset 0 0 0 2px rgba(76,201,240,0.55), 0 6px 18px rgba(0,0,0,0.35); }
-.pad.p1 .dir:active, .pad.p1 .dir.pressing { background: #e63946; color: #fff; }
-.pad.p2 .dir:active, .pad.p2 .dir.pressing { background: #4cc9f0; color: #06283b; }
+.pad.p1 .stick { background: rgba(230,57,70,0.5); }
+.pad.p2 .stick { background: rgba(76,201,240,0.5); }
+.pad.p1.active .stick { background: rgba(230,57,70,0.78); }
+.pad.p2.active .stick { background: rgba(76,201,240,0.78); }
 
 /* tools — reset / menu, bottom-right in 1P, bottom-centre in 2P */
 #tools {
