@@ -226,7 +226,34 @@ body.mode-3p #remain-chip { left: auto; right: max(16px, env(safe-area-inset-rig
 }
 .menu-btn small { display: block; font-size: 12px; font-weight: 500; opacity: 0.6; margin-top: 4px; }
 .menu-btn:active { background: var(--accent); color: #1a1230; transform: scale(0.97); }
+.menu-btn.alt:active { background: rgba(255,255,255,0.18); color: var(--text); }
 #menu-1p[disabled] { opacity: 0.4; pointer-events: none; }
+
+/* character select */
+#select {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 0%, var(--bg2), var(--bg));
+  z-index: 20; overflow: auto;
+}
+#select.hidden { display: none; }
+.select-card { text-align: center; padding: 18px 20px; width: min(96vw, 720px); }
+.select-card h1 { font-size: 26px; margin: 0 0 14px; letter-spacing: 1px; }
+.select-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  justify-content: center; margin: 8px 0;
+}
+.select-plabel { font-size: 18px; font-weight: 800; width: 34px; text-align: right; }
+.char-btn {
+  background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.14);
+  color: var(--text); padding: 8px 12px; border-radius: 14px;
+  font-size: 13px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 64px;
+}
+.char-btn .char-emoji { font-size: 22px; }
+.char-btn.sel { border-color: var(--accent); background: rgba(255,209,102,0.18); }
+.char-btn:active { transform: scale(0.95); }
+.select-actions { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
+.select-actions .menu-btn { width: min(40vw, 180px); margin: 0; padding: 12px; font-size: 16px; }
 
 /* overlay */
 #overlay {

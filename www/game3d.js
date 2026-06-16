@@ -231,8 +231,41 @@ function makeWizard() {
   return g;
 }
 
-const characters = [makeVader(), makePikachu(), makeEnderDragon(), makeWizard()];
-characters.forEach((c) => scene.add(c));
+// generic cute slime (a roster option, picks a fixed friendly colour)
+function makeSlime() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 28, 20), lamb(0x58d68d));
+  body.scale.set(1, 0.82, 1); body.position.y = 0.24; g.add(body);
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 0.06, 24), lamb(0x1e7a4d));
+  rim.position.y = 0.03; g.add(rim);
+  const shine = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }));
+  shine.position.set(-0.1, 0.42, 0.12); g.add(shine);
+  for (const dx of [-0.11, 0.11]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 12), lamb(0xffffff));
+    eye.position.set(dx, 0.3, 0.2); g.add(eye);
+    const pup = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), lamb(0x111111));
+    pup.position.set(dx, 0.29, 0.265); g.add(pup);
+  }
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.013, 8, 18, Math.PI), lamb(0x2a1020));
+  mouth.position.set(0, 0.2, 0.255); mouth.rotation.z = Math.PI; g.add(mouth);
+  return g;
+}
+
+// pickable roster; `picks[p]` is the chosen roster index for player p
+const ROSTER = [
+  { name: "슬라임", emoji: "🟢", make: makeSlime },
+  { name: "다스베이더", emoji: "🗡️", make: makeVader },
+  { name: "피카츄", emoji: "⚡", make: makePikachu },
+  { name: "엔더드래곤", emoji: "🐉", make: makeEnderDragon },
+  { name: "해리포터", emoji: "🧙", make: makeWizard },
+];
+const picks = [1, 2, 3, 4]; // default: vader / pika / ender / harry
+let characters = [];
+function buildCharacters() {
+  for (const c of characters) { scene.remove(c); disposeMesh(c); }
+  characters = picks.map((ri) => ROSTER[ri % ROSTER.length].make());
+  characters.forEach((c) => { c.visible = false; scene.add(c); });
+}
 
 // ---- game state -----------------------------------------------
 // mode: "1p" (level progression) | "2p" | "4p" (shared-board battle)
@@ -604,16 +637,55 @@ function battleComplete() {
   showOverlay(title, text, "다시 하기", () => startBattle(game.players));
 }
 
-// ---- main menu -------------------------------------------------
+// ---- main menu + character select -----------------------------
 const menu = document.getElementById("menu");
+const select = document.getElementById("select");
 function showMenu() {
   overlay.classList.add("hidden");
+  select.classList.add("hidden");
   menu.classList.remove("hidden");
 }
-document.getElementById("menu-1p").addEventListener("click", () => { menu.classList.add("hidden"); loadLevel(1); });
-document.getElementById("menu-2p").addEventListener("click", () => { menu.classList.add("hidden"); startBattle(2); });
-document.getElementById("menu-3p").addEventListener("click", () => { menu.classList.add("hidden"); startBattle(3); });
-document.getElementById("menu-4p").addEventListener("click", () => { menu.classList.add("hidden"); startBattle(4); });
+
+// chosen player count for the pending game; 1 = single-player levels
+let selPlayers = 1;
+function openSelect(n) {
+  selPlayers = n;
+  const rows = document.getElementById("select-rows");
+  rows.innerHTML = "";
+  for (let p = 0; p < n; p++) {
+    const row = document.createElement("div");
+    row.className = "select-row";
+    const label = document.createElement("span");
+    label.className = "select-plabel"; label.style.color = PLAYER_HEX[p];
+    label.textContent = "P" + (p + 1);
+    row.appendChild(label);
+    ROSTER.forEach((char, ri) => {
+      const b = document.createElement("button");
+      b.className = "char-btn" + (picks[p] === ri ? " sel" : "");
+      b.dataset.player = p; b.dataset.ri = ri;
+      b.innerHTML = `<span class="char-emoji">${char.emoji}</span>${char.name}`;
+      b.addEventListener("click", () => {
+        picks[p] = ri;
+        rows.querySelectorAll(`.char-btn[data-player="${p}"]`).forEach((x) => x.classList.toggle("sel", +x.dataset.ri === ri));
+      });
+      row.appendChild(b);
+    });
+    rows.appendChild(row);
+  }
+  menu.classList.add("hidden");
+  select.classList.remove("hidden");
+}
+const PLAYER_HEX = ["#ff6b78", "#7ad8f5", "#7fe6a8", "#f7df85"];
+document.getElementById("menu-1p").addEventListener("click", () => openSelect(1));
+document.getElementById("menu-2p").addEventListener("click", () => openSelect(2));
+document.getElementById("menu-3p").addEventListener("click", () => openSelect(3));
+document.getElementById("menu-4p").addEventListener("click", () => openSelect(4));
+document.getElementById("select-back").addEventListener("click", showMenu);
+document.getElementById("select-start").addEventListener("click", () => {
+  select.classList.add("hidden");
+  buildCharacters();
+  if (selPlayers === 1) loadLevel(1); else startBattle(selPlayers);
+});
 document.getElementById("to-menu").addEventListener("click", () => { if (!anyBusy()) showMenu(); });
 
 // ---- main loop -------------------------------------------------
