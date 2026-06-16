@@ -422,7 +422,7 @@ function setHeld(player, dir) {
 function setupJoystick(padEl, player) {
   if (!padEl) return;
   const stick = padEl.querySelector(".stick");
-  const DEAD = 10, MAXR = 36;
+  const DEAD = 10, MAXR = 44;
   let pid = null, cx = 0, cy = 0;
   function update(clientX, clientY) {
     const dx = clientX - cx, dy = clientY - cy, mag = Math.hypot(dx, dy);
