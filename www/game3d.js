@@ -126,24 +126,34 @@ function createDieMesh(d) {
   return mesh;
 }
 
-// ---- character -------------------------------------------------
-function createCharacter(bodyColor, hornColor) {
+// ---- character (slime / jelly) --------------------------------
+// A rounded blob in the player's colour with big eyes and a smile. The second
+// colour is used for a darker contact rim so players read clearly on any die.
+function createCharacter(bodyColor, rimColor) {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 18), new THREE.MeshLambertMaterial({ color: bodyColor }));
-  body.position.y = 0.26; g.add(body);
+  // blob body: a sphere squashed vertically so it sits like a dome
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 28, 20), new THREE.MeshLambertMaterial({ color: bodyColor }));
+  body.scale.set(1, 0.82, 1);
+  body.position.y = 0.24;
+  g.add(body);
+  // darker base rim, grounds the blob on the die
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 0.06, 24), new THREE.MeshLambertMaterial({ color: rimColor }));
+  rim.position.y = 0.03; g.add(rim);
+  // glossy highlight
+  const shine = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }));
+  shine.position.set(-0.1, 0.42, 0.12); g.add(shine);
+  // big eyes + pupils
   const eyeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
   const pupMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-  for (const dx of [-0.1, 0.1]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), eyeMat);
-    eye.position.set(dx, 0.32, 0.2); g.add(eye);
-    const pup = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), pupMat);
-    pup.position.set(dx, 0.32, 0.255); g.add(pup);
+  for (const dx of [-0.11, 0.11]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 12), eyeMat);
+    eye.position.set(dx, 0.3, 0.2); g.add(eye);
+    const pup = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), pupMat);
+    pup.position.set(dx, 0.29, 0.265); g.add(pup);
   }
-  const hornMat = new THREE.MeshLambertMaterial({ color: hornColor });
-  for (const dx of [-0.12, 0.12]) {
-    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.16, 10), hornMat);
-    horn.position.set(dx, 0.5, 0); horn.rotation.z = dx > 0 ? -0.3 : 0.3; g.add(horn);
-  }
+  // smile: lower half of a thin torus ring, facing the camera
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.013, 8, 18, Math.PI), new THREE.MeshLambertMaterial({ color: 0x2a1020 }));
+  mouth.position.set(0, 0.2, 0.255); mouth.rotation.z = Math.PI; g.add(mouth);
   return g;
 }
 // P1 red, P2 cyan, P3 green, P4 yellow — must match the pad colours in style.css
