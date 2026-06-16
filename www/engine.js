@@ -78,10 +78,25 @@
     return n;
   }
 
-  // connected (4-neighbour) groups of equal top value; a group clears
-  // when its size reaches that value. `riders` is the list of character
-  // positions that "count" for the v===1 exception (a lone 1 only clears
-  // when a character is standing on it); defaults to the single-player char.
+  // true when a same-value group has no die of any kind touching it from
+  // outside (the maximal connected component means same-value neighbours are
+  // already inside, so any outside neighbour is a different value).
+  function groupIsolated(st, group) {
+    const inGroup = new Set(group.map(([r, c]) => r * st.cols + c));
+    for (const [gr, gc] of group)
+      for (const dir of DIRS) {
+        const [dr, dc] = DELTA[dir];
+        const nr = gr + dr, nc = gc + dc;
+        if (nr < 0 || nr >= st.rows || nc < 0 || nc >= st.cols) continue;
+        if (st.board[nr][nc] && !inGroup.has(nr * st.cols + nc)) return false;
+      }
+    return true;
+  }
+
+  // connected (4-neighbour) groups of equal top value. A group clears only when
+  // its size is EXACTLY its value AND it is fully isolated (no other die touches
+  // it). `riders` are the character positions that "count" for the v===1
+  // exception (a lone 1 also needs a rider); defaults to the single-player char.
   function findClears(st, riders) {
     riders = riders || (st.char ? [st.char] : []);
     const seen = Array.from({ length: st.rows }, () => Array(st.cols).fill(false));
@@ -103,26 +118,16 @@
             if (nd && !seen[nr][nc] && nd.top === v) { seen[nr][nc] = true; stack.push([nr, nc]); }
           }
         }
-        // A group of value v clears only when its size is EXACTLY v — an
-        // over-sized group (v+1 or more) does NOT clear. Exception for v === 1:
-        // a die showing 1 only clears when (a) the character is riding it and
-        // (b) it is isolated (no adjacent die). A lone 1 the character is not
-        // standing on must stay, and so must a 1 that has any neighbour.
-        if (v === 1) {
-          if (group.length === 1) {
+        // Clear a group only when its size is EXACTLY v AND it is fully
+        // isolated (no other die touches it). v === 1 additionally needs a
+        // character riding it.
+        if (group.length === v && groupIsolated(st, group)) {
+          if (v === 1) {
             const [gr, gc] = group[0];
-            const charOnTop = riders.some((p) => p && p.r === gr && p.c === gc);
-            let hasNeighbour = false;
-            for (const dir of DIRS) {
-              const [dr, dc] = DELTA[dir];
-              const nr = gr + dr, nc = gc + dc;
-              if (nr < 0 || nr >= st.rows || nc < 0 || nc >= st.cols) continue;
-              if (st.board[nr][nc]) { hasNeighbour = true; break; }
-            }
-            if (charOnTop && !hasNeighbour) out.push(...group);
+            if (riders.some((p) => p && p.r === gr && p.c === gc)) out.push(...group);
+          } else {
+            out.push(...group);
           }
-        } else if (group.length === v) {
-          out.push(...group);
         }
       }
     return out;
