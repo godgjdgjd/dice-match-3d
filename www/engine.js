@@ -292,6 +292,8 @@
     const events = [];
 
     if (next.board[nr][nc]) {
+      // can't hop onto a die another player is already standing on
+      if (next.chars.some((ch, p) => p !== pi && ch.r === nr && ch.c === nc)) return null;
       next.chars[pi] = { r: nr, c: nc };
       events.push({ type: "hop", player: pi, from: { r: cr, c: cc }, to: { r: nr, c: nc } });
       return { next, events };
@@ -317,7 +319,10 @@
       for (let p = 0; p < next.chars.length; p++) {
         const ch = next.chars[p];
         if (exclude.has(ch.r * next.cols + ch.c)) {
-          const safe = findSafeFrom(next, exclude);
+          // also avoid dice the other players are standing on (no shared dice)
+          const blocked = new Set(exclude);
+          next.chars.forEach((o, q) => { if (q !== p) blocked.add(o.r * next.cols + o.c); });
+          const safe = findSafeFrom(next, blocked);
           if (safe) { relocations.push({ player: p, from: { ...ch }, to: safe }); next.chars[p] = safe; }
         }
       }
