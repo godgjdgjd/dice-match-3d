@@ -209,10 +209,10 @@ function loadLevel(idx) {
 
 // Shared-board battle: scattered dice, players race to clear the most. Bigger
 // board for 4P. No level progression — replay from the menu / reset.
-const BATTLE = { 2: { rows: 8, cols: 8, fill: 0.5 }, 4: { rows: 9, cols: 9, fill: 0.5 } };
+const BATTLE = { 2: { rows: 8, cols: 8, fill: 0.5 }, 3: { rows: 9, cols: 9, fill: 0.5 }, 4: { rows: 9, cols: 9, fill: 0.5 } };
 function startBattle(n) {
   game.players = n;
-  game.mode = n === 4 ? "4p" : "2p";
+  game.mode = n + "p";
   const cfg = BATTLE[n];
   game.st = Engine.makeBattleState(cfg.rows, cfg.cols, { fill: cfg.fill, players: n });
   buildBoardMeshes();
@@ -242,6 +242,7 @@ function updateHUD() {
 function applyModeClass() {
   document.body.classList.toggle("mode-battle", isBattle());
   document.body.classList.toggle("mode-2p", game.mode === "2p");
+  document.body.classList.toggle("mode-3p", game.mode === "3p");
   document.body.classList.toggle("mode-4p", game.mode === "4p");
 }
 
@@ -533,6 +534,7 @@ function showMenu() {
 }
 document.getElementById("menu-1p").addEventListener("click", () => { menu.classList.add("hidden"); loadLevel(1); });
 document.getElementById("menu-2p").addEventListener("click", () => { menu.classList.add("hidden"); startBattle(2); });
+document.getElementById("menu-3p").addEventListener("click", () => { menu.classList.add("hidden"); startBattle(3); });
 document.getElementById("menu-4p").addEventListener("click", () => { menu.classList.add("hidden"); startBattle(4); });
 document.getElementById("to-menu").addEventListener("click", () => { if (!anyBusy()) showMenu(); });
 

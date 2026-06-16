@@ -123,8 +123,9 @@ html, body {
 #pad2 { right: max(20px, env(safe-area-inset-right)); bottom: calc(max(18px, env(safe-area-inset-bottom)) + 4px); }
 #pad3 { left:  max(20px, env(safe-area-inset-left));  top: calc(max(14px, env(safe-area-inset-top)) + 4px); }
 #pad4 { right: max(20px, env(safe-area-inset-right)); top: calc(max(14px, env(safe-area-inset-top)) + 4px); }
-body.mode-battle #pad2 { display: block; }                  /* P2 in 2P + 4P */
-body.mode-4p #pad3, body.mode-4p #pad4 { display: block; }  /* P3/P4 in 4P only */
+body.mode-battle #pad2 { display: block; }                  /* P2 in all battle modes */
+body.mode-3p #pad3 { display: block; left: 50%; right: auto; transform: translateX(-50%); } /* P3 top-centre in 3P */
+body.mode-4p #pad3, body.mode-4p #pad4 { display: block; }  /* P3/P4 corners in 4P */
 
 .arrows { position: absolute; inset: 0; pointer-events: none; }
 /* opposite-side pads: rotate the arrow labels so "up" reads toward that player */
@@ -203,6 +204,8 @@ body.mode-battle #hint { display: none; }
   display: none;
 }
 body.mode-battle #remain-chip { display: block; }
+/* in 3P the top-centre is taken by P3's pad, so move the chip to the free top-right */
+body.mode-3p #remain-chip { left: auto; right: max(16px, env(safe-area-inset-right)); transform: none; }
 
 /* main menu */
 #menu {
