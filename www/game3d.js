@@ -415,16 +415,17 @@ function setHeld(player, dir) {
   if (dir && !busyPlayer[player]) requestMove(player, dir); // kick now if idle
 }
 
-// Floating joystick (Wild Rift style): the touch point becomes the centre,
-// dragging selects N/S/E/W, holding keeps moving. Each pad captures its own
-// pointer id so both joysticks can be held at the same time.
+// Fixed-centre joystick: direction is the offset from the pad's centre, so just
+// pressing-and-holding one side keeps moving that way (no sliding needed), and
+// dragging across re-steers. Each pad captures its own pointer id so both can be
+// held at once. Movement repeats via the per-move completion in pump().
 function setupJoystick(padEl, player) {
   if (!padEl) return;
   const stick = padEl.querySelector(".stick");
-  const DEAD = 12, MAXR = 34;
-  let pid = null, ox = 0, oy = 0;
-  function update(dx, dy) {
-    const mag = Math.hypot(dx, dy);
+  const DEAD = 10, MAXR = 36;
+  let pid = null, cx = 0, cy = 0;
+  function update(clientX, clientY) {
+    const dx = clientX - cx, dy = clientY - cy, mag = Math.hypot(dx, dy);
     if (stick) { const k = mag > MAXR ? MAXR / mag : 1; stick.style.transform = `translate(${dx * k}px, ${dy * k}px)`; }
     let dir = null;
     if (mag >= DEAD) dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "east" : "west") : (dy > 0 ? "south" : "north");
@@ -433,13 +434,14 @@ function setupJoystick(padEl, player) {
   function release() { pid = null; padEl.classList.remove("active"); if (stick) stick.style.transform = ""; setHeld(player, null); }
   padEl.addEventListener("pointerdown", (e) => {
     if (pid !== null || !overlay.classList.contains("hidden")) return;
-    pid = e.pointerId; ox = e.clientX; oy = e.clientY;
-    padEl.setPointerCapture(pid); padEl.classList.add("active");
-    e.preventDefault(); update(0, 0);
+    const r = padEl.getBoundingClientRect();
+    cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+    pid = e.pointerId; padEl.setPointerCapture(pid); padEl.classList.add("active");
+    e.preventDefault(); update(e.clientX, e.clientY);
   });
   padEl.addEventListener("pointermove", (e) => {
     if (e.pointerId !== pid) return;
-    update(e.clientX - ox, e.clientY - oy); e.preventDefault();
+    update(e.clientX, e.clientY); e.preventDefault();
   });
   const end = (e) => { if (e.pointerId === pid) release(); };
   padEl.addEventListener("pointerup", end);
