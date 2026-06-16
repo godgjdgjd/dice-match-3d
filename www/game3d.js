@@ -67,7 +67,9 @@ window.addEventListener("resize", resize);
 
 // ---- pip textures + die mesh ----------------------------------
 const PIP_SLOTS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-const FACE_COLOR = { 2: "#f4a259", 3: "#2ec4b6", 4: "#4895ef", 5: "#ef476f", 6: "#9b5de5", 1: "#e9c46a" };
+// 1 = vivid yellow, 2 = clear orange — kept far enough apart in hue + brightness
+// so the two warm faces don't read as the same colour.
+const FACE_COLOR = { 1: "#ffd23f", 2: "#ff8a3d", 3: "#2ec4b6", 4: "#4895ef", 5: "#ef476f", 6: "#9b5de5" };
 // luminance of a #rrggbb colour (0 dark .. 1 light)
 function luminance(hex) {
   const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
