@@ -126,44 +126,112 @@ function createDieMesh(d) {
   return mesh;
 }
 
-// ---- character (slime / jelly) --------------------------------
-// A rounded blob in the player's colour with big eyes and a smile. The second
-// colour is used for a darker contact rim so players read clearly on any die.
-function createCharacter(bodyColor, rimColor) {
+// ---- characters (themed per player) ---------------------------
+// Stylised low-poly caricatures built from THREE primitives — homage shapes,
+// not official assets. Each sits on a die (~0.5 tall) and faces the camera (+z).
+const lamb = (c) => new THREE.MeshLambertMaterial({ color: c });
+const glow = (c) => new THREE.MeshBasicMaterial({ color: c });
+
+// P1 — dark-helmeted villain (Star Wars vibe)
+function makeVader() {
   const g = new THREE.Group();
-  // blob body: a sphere squashed vertically so it sits like a dome
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 28, 20), new THREE.MeshLambertMaterial({ color: bodyColor }));
-  body.scale.set(1, 0.82, 1);
-  body.position.y = 0.24;
-  g.add(body);
-  // darker base rim, grounds the blob on the die
-  const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 0.06, 24), new THREE.MeshLambertMaterial({ color: rimColor }));
-  rim.position.y = 0.03; g.add(rim);
-  // glossy highlight
-  const shine = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }));
-  shine.position.set(-0.1, 0.42, 0.12); g.add(shine);
-  // big eyes + pupils
-  const eyeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-  const pupMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-  for (const dx of [-0.11, 0.11]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 12), eyeMat);
-    eye.position.set(dx, 0.3, 0.2); g.add(eye);
-    const pup = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), pupMat);
-    pup.position.set(dx, 0.29, 0.265); g.add(pup);
+  const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.27, 0.34, 18), lamb(0x111114));
+  robe.position.y = 0.17; g.add(robe);
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, 0.2), lamb(0x17171c));
+  chest.position.y = 0.33; g.add(chest);
+  const flare = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.12, 16), lamb(0x05050a));
+  flare.position.y = 0.43; g.add(flare);
+  const helm = new THREE.Mesh(new THREE.SphereGeometry(0.16, 18, 14), lamb(0x05050a));
+  helm.position.y = 0.52; g.add(helm);
+  const mask = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.16, 0.08), lamb(0x3a3a42));
+  mask.position.set(0, 0.5, 0.12); g.add(mask);
+  for (const dx of [-0.05, 0.05]) {
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.035, 0.02), lamb(0x0a0a0a));
+    eye.position.set(dx, 0.53, 0.165); g.add(eye);
   }
-  // smile: lower half of a thin torus ring, facing the camera
-  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.013, 8, 18, Math.PI), new THREE.MeshLambertMaterial({ color: 0x2a1020 }));
-  mouth.position.set(0, 0.2, 0.255); mouth.rotation.z = Math.PI; g.add(mouth);
+  const saber = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.4, 8), glow(0xff2b2b));
+  saber.position.set(0.27, 0.33, 0.05); saber.rotation.z = -0.22; g.add(saber);
+  const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.09, 8), lamb(0x9a9aa0));
+  hilt.position.set(0.21, 0.11, 0.05); hilt.rotation.z = -0.22; g.add(hilt);
   return g;
 }
-// P1 red, P2 cyan, P3 green, P4 yellow — must match the pad colours in style.css
-const PLAYER_COLORS = [
-  { body: 0xe63946, horn: 0x7a1020 },
-  { body: 0x4cc9f0, horn: 0x1a6fa0 },
-  { body: 0x58d68d, horn: 0x1e7a4d },
-  { body: 0xf4d35e, horn: 0xa8861f },
-];
-const characters = PLAYER_COLORS.map((c) => createCharacter(c.body, c.horn));
+
+// P2 — yellow electric mouse (Pikachu vibe)
+function makePikachu() {
+  const g = new THREE.Group();
+  const yel = lamb(0xffd83b), blk = lamb(0x161616);
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.27, 24, 18), yel);
+  body.scale.set(1, 0.95, 0.9); body.position.y = 0.27; g.add(body);
+  for (const dx of [-0.12, 0.12]) {
+    const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.06, 0.22, 10), yel);
+    ear.position.set(dx, 0.52, -0.02); ear.rotation.z = dx > 0 ? -0.32 : 0.32; g.add(ear);
+    const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.034, 0.08, 10), blk);
+    tip.position.set(dx * 1.4, 0.62, -0.05); tip.rotation.z = dx > 0 ? -0.32 : 0.32; g.add(tip);
+  }
+  for (const dx of [-0.1, 0.1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), blk);
+    eye.position.set(dx, 0.33, 0.22); g.add(eye);
+    const hi = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), lamb(0xffffff));
+    hi.position.set(dx + 0.012, 0.345, 0.255); g.add(hi);
+  }
+  for (const dx of [-0.17, 0.17]) {
+    const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 8), lamb(0xe23b3b));
+    cheek.position.set(dx, 0.25, 0.16); g.add(cheek);
+  }
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 6), blk);
+  nose.position.set(0, 0.28, 0.27); g.add(nose);
+  return g;
+}
+
+// P3 — blocky black dragon with glowing eyes (Minecraft Ender Dragon vibe)
+function makeEnderDragon() {
+  const g = new THREE.Group();
+  const blk = lamb(0x0d0d12), wing = lamb(0x1a1a22);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.2, 0.34), blk);
+  body.position.y = 0.18; g.add(body);
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.16), blk);
+  neck.position.set(0, 0.33, 0.12); g.add(neck);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 0.2), blk);
+  head.position.set(0, 0.44, 0.2); g.add(head);
+  const snout = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.12), blk);
+  snout.position.set(0, 0.4, 0.34); g.add(snout);
+  for (const dx of [-0.07, 0.07]) {
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.03), glow(0xc24bff));
+    eye.position.set(dx, 0.47, 0.3); g.add(eye);
+  }
+  for (const s of [-1, 1]) {
+    const w = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.02, 0.16), wing);
+    w.position.set(s * 0.22, 0.3, -0.06); w.rotation.z = s * 0.4; w.rotation.y = s * 0.35; g.add(w);
+  }
+  return g;
+}
+
+// P4 — bespectacled young wizard (Harry Potter vibe)
+function makeWizard() {
+  const g = new THREE.Group();
+  const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.24, 0.32, 16), lamb(0x1c1c24));
+  robe.position.y = 0.16; g.add(robe);
+  const scarf = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.135, 0.06, 16), lamb(0x9b1b2e));
+  scarf.position.y = 0.33; g.add(scarf);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 16), lamb(0xe8b58c));
+  head.position.y = 0.46; g.add(head);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.162, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.62), lamb(0x241509));
+  hair.position.y = 0.485; g.add(hair);
+  const frame = lamb(0x111111);
+  for (const dx of [-0.06, 0.06]) {
+    const lens = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.008, 8, 16), frame);
+    lens.position.set(dx, 0.46, 0.135); g.add(lens);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.02, 10, 8), frame);
+    eye.position.set(dx, 0.46, 0.13); g.add(eye);
+  }
+  const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.008, 0.008), frame);
+  bridge.position.set(0, 0.46, 0.15); g.add(bridge);
+  const wand = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.26, 6), lamb(0x6b4a2b));
+  wand.position.set(0.24, 0.3, 0.06); wand.rotation.z = -0.3; g.add(wand);
+  return g;
+}
+
+const characters = [makeVader(), makePikachu(), makeEnderDragon(), makeWizard()];
 characters.forEach((c) => scene.add(c));
 
 // ---- game state -----------------------------------------------
