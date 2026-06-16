@@ -107,20 +107,28 @@ html, body {
   font-size: 12px; line-height: 1.4; opacity: 0.5; margin: 0;
 }
 
-/* floating joystick (Wild Rift style): hold + drag to steer, hold to keep moving */
+/* floating joystick (Wild Rift style): hold + drag to steer, hold to keep moving.
+   Up to 4 pads, one per screen corner. */
 .pad {
   position: absolute;
-  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 4px);
   z-index: 6;
   width: 146px; height: 146px;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.08), 0 6px 18px rgba(0,0,0,0.35);
   touch-action: none;                     /* don't let the browser eat the drag */
+  display: none;                          /* shown per mode below */
 }
-#pad  { left:  max(20px, env(safe-area-inset-left)); }
-#pad2 { right: max(20px, env(safe-area-inset-right)); display: none; }
-body.mode-2p #pad2 { display: block; }    /* P2 joystick only appears in 2P */
+#pad  { left:  max(20px, env(safe-area-inset-left));  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 4px); display: block; }
+#pad2 { right: max(20px, env(safe-area-inset-right)); bottom: calc(max(18px, env(safe-area-inset-bottom)) + 4px); }
+#pad3 { left:  max(20px, env(safe-area-inset-left));  top: calc(max(14px, env(safe-area-inset-top)) + 4px); }
+#pad4 { right: max(20px, env(safe-area-inset-right)); top: calc(max(14px, env(safe-area-inset-top)) + 4px); }
+body.mode-battle #pad2 { display: block; }                  /* P2 in 2P + 4P */
+body.mode-4p #pad3, body.mode-4p #pad4 { display: block; }  /* P3/P4 in 4P only */
+
+.arrows { position: absolute; inset: 0; pointer-events: none; }
+/* opposite-side pads: rotate the arrow labels so "up" reads toward that player */
+#pad3 .arrows, #pad4 .arrows { transform: rotate(180deg); }
 .pad .arrow {
   position: absolute; font-size: 12px; line-height: 1; opacity: 0.32;
   color: var(--text); pointer-events: none;
@@ -129,6 +137,16 @@ body.mode-2p #pad2 { display: block; }    /* P2 joystick only appears in 2P */
 .pad .arrow.down  { bottom: 8px; left: 50%; transform: translateX(-50%); }
 .pad .arrow.left  { left: 9px;   top: 50%;  transform: translateY(-50%); }
 .pad .arrow.right { right: 9px;  top: 50%;  transform: translateY(-50%); }
+
+.pad-score {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size: 15px; font-weight: 800; color: var(--text);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6); pointer-events: none;
+}
+#pad .pad-score, #pad2 .pad-score  { top: -22px; }
+#pad3 .pad-score, #pad4 .pad-score { bottom: -22px; transform: translateX(-50%) rotate(180deg); }
+body:not(.mode-battle) .pad-score { display: none; }
+
 .stick {
   position: absolute; left: 50%; top: 50%;
   width: 60px; height: 60px; margin: -30px 0 0 -30px;
@@ -137,15 +155,25 @@ body.mode-2p #pad2 { display: block; }    /* P2 joystick only appears in 2P */
   box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 0 0 2px rgba(255,255,255,0.28);
   pointer-events: none;
 }
-/* tint each joystick with its player colour */
+/* tint each joystick + score with its player colour */
 .pad.p1 { box-shadow: inset 0 0 0 2px rgba(230,57,70,0.55), 0 6px 18px rgba(0,0,0,0.35); }
 .pad.p2 { box-shadow: inset 0 0 0 2px rgba(76,201,240,0.55), 0 6px 18px rgba(0,0,0,0.35); }
+.pad.p3 { box-shadow: inset 0 0 0 2px rgba(88,214,141,0.55), 0 6px 18px rgba(0,0,0,0.35); }
+.pad.p4 { box-shadow: inset 0 0 0 2px rgba(244,211,94,0.60), 0 6px 18px rgba(0,0,0,0.35); }
 .pad.p1 .stick { background: rgba(230,57,70,0.5); }
 .pad.p2 .stick { background: rgba(76,201,240,0.5); }
+.pad.p3 .stick { background: rgba(88,214,141,0.5); }
+.pad.p4 .stick { background: rgba(244,211,94,0.55); }
 .pad.p1.active .stick { background: rgba(230,57,70,0.78); }
 .pad.p2.active .stick { background: rgba(76,201,240,0.78); }
+.pad.p3.active .stick { background: rgba(88,214,141,0.78); }
+.pad.p4.active .stick { background: rgba(244,211,94,0.85); }
+.pad.p1 .pad-score { color: #ff6b78; }
+.pad.p2 .pad-score { color: #7ad8f5; }
+.pad.p3 .pad-score { color: #7fe6a8; }
+.pad.p4 .pad-score { color: #f7df85; }
 
-/* tools — reset / menu, bottom-right in 1P, bottom-centre in 2P */
+/* tools — reset / menu, bottom-right in 1P, bottom-centre in battle */
 #tools {
   position: absolute;
   right: max(16px, env(safe-area-inset-right));
@@ -153,7 +181,7 @@ body.mode-2p #pad2 { display: block; }    /* P2 joystick only appears in 2P */
   z-index: 6;
   display: flex; gap: 8px; justify-content: center;
 }
-body.mode-2p #tools { right: auto; left: 50%; transform: translateX(-50%); }
+body.mode-battle #tools { right: auto; left: 50%; transform: translateX(-50%); }
 #tools button {
   background: rgba(20, 14, 40, 0.55); backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -164,11 +192,17 @@ body.mode-2p #tools { right: auto; left: 50%; transform: translateX(-50%); }
 /* HUD mode switching */
 .hud-set { display: none; flex: 1; justify-content: space-between; }
 #hud-1p { display: flex; }
-body.mode-2p #hud-1p { display: none; }
-body.mode-2p #hud-2p { display: flex; }
-body.mode-2p #hint { display: none; }
-.hud-item.p1 #p1score, .hud-item.p1 .hud-label { color: #ff6b78; }
-.hud-item.p2 #p2score, .hud-item.p2 .hud-label { color: #7ad8f5; }
+body.mode-battle #hud { display: none; }
+body.mode-battle #hint { display: none; }
+/* remaining-dice chip (battle only, centred at top) */
+#remain-chip {
+  position: absolute; top: max(10px, env(safe-area-inset-top));
+  left: 50%; transform: translateX(-50%); z-index: 5;
+  background: rgba(20, 14, 40, 0.55); backdrop-filter: blur(6px);
+  border-radius: 14px; padding: 5px 14px; font-size: 15px; font-weight: 800;
+  display: none;
+}
+body.mode-battle #remain-chip { display: block; }
 
 /* main menu */
 #menu {

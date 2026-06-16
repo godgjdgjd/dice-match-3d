@@ -244,16 +244,27 @@
     const cells = [];
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cells.push([r, c]);
     for (let i = cells.length - 1; i > 0; i--) { const j = (rnd() * (i + 1)) | 0; [cells[i], cells[j]] = [cells[j], cells[i]]; }
-    const nDice = Math.max(4, Math.round(rows * cols * fill));
+    const players = opts.players || 2;
+    const nDice = Math.max(players, Math.round(rows * cols * fill));
     const filled = cells.slice(0, nDice);
     for (const [r, c] of filled) board[r][c] = randomOrientation(values[(rnd() * values.length) | 0], rnd);
-    // start the two characters near opposite corners (min / max of r+c)
-    const sorted = filled.slice().sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]));
-    const chars = [
-      { r: sorted[0][0], c: sorted[0][1] },
-      { r: sorted[sorted.length - 1][0], c: sorted[sorted.length - 1][1] },
-    ];
-    const st = { rows, cols, board, chars, scores: [0, 0] };
+    // each player starts on the surviving die nearest their corner:
+    // P1 bottom-left, P2 bottom-right, P3 top-left, P4 top-right
+    const anchors = [[rows - 1, 0], [rows - 1, cols - 1], [0, 0], [0, cols - 1]];
+    const used = new Set();
+    const chars = [];
+    for (let p = 0; p < players; p++) {
+      const [ar, ac] = anchors[p % anchors.length];
+      let best = null, bestD = Infinity;
+      for (const [r, c] of filled) {
+        const k = r * cols + c;
+        if (used.has(k)) continue;
+        const d = Math.abs(r - ar) + Math.abs(c - ac);
+        if (d < bestD) { bestD = d; best = [r, c, k]; }
+      }
+      if (best) { used.add(best[2]); chars.push({ r: best[0], c: best[1] }); }
+    }
+    const st = { rows, cols, board, chars, scores: new Array(chars.length).fill(0) };
     // repick tops until the board starts with no ready-to-clear group
     let guard = 0;
     while (guard++ < 300) {

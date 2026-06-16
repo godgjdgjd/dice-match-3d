@@ -24,21 +24,10 @@
           <span id="par">0</span>
         </div>
       </div>
-      <div id="hud-2p" class="hud-set">
-        <div class="hud-item p1">
-          <span class="hud-label">PLAYER 1</span>
-          <span id="p1score">0</span>
-        </div>
-        <div class="hud-item">
-          <span class="hud-label">남은 주사위</span>
-          <span id="battle-left">0</span>
-        </div>
-        <div class="hud-item p2">
-          <span class="hud-label">PLAYER 2</span>
-          <span id="p2score">0</span>
-        </div>
-      </div>
     </header>
+
+    <!-- battle: remaining dice, centred at the top -->
+    <div id="remain-chip"><span class="hud-label">남은 주사위</span> <span id="remain">0</span></div>
 
     <main id="stage">
       <canvas id="scene"></canvas>
@@ -47,14 +36,23 @@
     <p id="hint">방향을 누르면 캐릭터가 탄 주사위가 <b>굴러갑니다</b> (윗면 숫자가 바뀜).<br/>같은 숫자를 그 수만큼 모아 <b>보드의 주사위를 전부 없애면</b> 클리어!</p>
 
     <nav id="pad" class="pad p1" aria-label="player 1 joystick">
-      <span class="arrow up">▲</span><span class="arrow down">▼</span>
-      <span class="arrow left">◀</span><span class="arrow right">▶</span>
+      <div class="arrows"><span class="arrow up">▲</span><span class="arrow down">▼</span><span class="arrow left">◀</span><span class="arrow right">▶</span></div>
+      <span class="pad-score" id="score0">0</span>
       <div class="stick"></div>
     </nav>
-
     <nav id="pad2" class="pad p2" aria-label="player 2 joystick">
-      <span class="arrow up">▲</span><span class="arrow down">▼</span>
-      <span class="arrow left">◀</span><span class="arrow right">▶</span>
+      <div class="arrows"><span class="arrow up">▲</span><span class="arrow down">▼</span><span class="arrow left">◀</span><span class="arrow right">▶</span></div>
+      <span class="pad-score" id="score1">0</span>
+      <div class="stick"></div>
+    </nav>
+    <nav id="pad3" class="pad p3" aria-label="player 3 joystick">
+      <div class="arrows"><span class="arrow up">▲</span><span class="arrow down">▼</span><span class="arrow left">◀</span><span class="arrow right">▶</span></div>
+      <span class="pad-score" id="score2">0</span>
+      <div class="stick"></div>
+    </nav>
+    <nav id="pad4" class="pad p4" aria-label="player 4 joystick">
+      <div class="arrows"><span class="arrow up">▲</span><span class="arrow down">▼</span><span class="arrow left">◀</span><span class="arrow right">▶</span></div>
+      <span class="pad-score" id="score3">0</span>
       <div class="stick"></div>
     </nav>
 
@@ -70,6 +68,7 @@
       <p>모드를 선택하세요</p>
       <button id="menu-1p" class="menu-btn">1인 모드<small>50레벨 퍼즐</small></button>
       <button id="menu-2p" class="menu-btn">2인 모드<small>한 화면에서 주사위 대결</small></button>
+      <button id="menu-4p" class="menu-btn">4인 모드<small>네 모서리 패드로 4인 대결</small></button>
     </div>
   </div>
 

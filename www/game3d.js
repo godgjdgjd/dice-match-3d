@@ -146,23 +146,23 @@ function createCharacter(bodyColor, hornColor) {
   }
   return g;
 }
-// P1 red, P2 cyan — must match the controller colours in style.css
+// P1 red, P2 cyan, P3 green, P4 yellow — must match the pad colours in style.css
 const PLAYER_COLORS = [
   { body: 0xe63946, horn: 0x7a1020 },
   { body: 0x4cc9f0, horn: 0x1a6fa0 },
+  { body: 0x58d68d, horn: 0x1e7a4d },
+  { body: 0xf4d35e, horn: 0xa8861f },
 ];
-const characters = [
-  createCharacter(PLAYER_COLORS[0].body, PLAYER_COLORS[0].horn),
-  createCharacter(PLAYER_COLORS[1].body, PLAYER_COLORS[1].horn),
-];
+const characters = PLAYER_COLORS.map((c) => createCharacter(c.body, c.horn));
 characters.forEach((c) => scene.add(c));
 
 // ---- game state -----------------------------------------------
-// mode: "1p" (level progression) | "2p" (shared-board battle)
-const game = { mode: "1p", idx: 1, st: null, meshAt: [], par: 0 };
+// mode: "1p" (level progression) | "2p" | "4p" (shared-board battle)
+const game = { mode: "1p", players: 1, idx: 1, st: null, meshAt: [], par: 0 };
+function isBattle() { return game.players >= 2; }
+function activePlayers() { return Array.from({ length: game.players }, (_, i) => i); }
 // per-player {r,c}; 1P uses only index 0 and mirrors game.st.char
-function charRC(pi) { return game.mode === "2p" ? game.st.chars[pi] : game.st.char; }
-function activePlayers() { return game.mode === "2p" ? [0, 1] : [0]; }
+function charRC(pi) { return isBattle() ? game.st.chars[pi] : game.st.char; }
 
 function cellCenter(r, c) {
   const st = game.st;
@@ -193,40 +193,44 @@ function buildBoardMeshes() {
 
 function loadLevel(idx) {
   game.mode = "1p";
+  game.players = 1;
   const data = LEVELS[idx - 1];
   game.idx = idx;
   game.st = Engine.stateFromLevel(data);
   game.par = data.par;
   buildBoardMeshes();
-  characters[0].visible = true;
-  characters[1].visible = false;
+  characters.forEach((c, i) => (c.visible = i === 0));
   characters[0].position.copy(charPosOn(game.st.char.r, game.st.char.c));
   clearLocks();
-  setMode2pUI(false);
+  applyModeClass();
   updateHUD();
   requestFrame();
 }
 
-// 2P battle: widest recommended board, scattered dice, two players race to
-// clear the most dice. No level progression — replay from the menu/reset.
-const BATTLE = { rows: 8, cols: 8, fill: 0.5 };
-function startBattle() {
-  game.mode = "2p";
-  game.st = Engine.makeBattleState(BATTLE.rows, BATTLE.cols, { fill: BATTLE.fill });
+// Shared-board battle: scattered dice, players race to clear the most. Bigger
+// board for 4P. No level progression — replay from the menu / reset.
+const BATTLE = { 2: { rows: 8, cols: 8, fill: 0.5 }, 4: { rows: 9, cols: 9, fill: 0.5 } };
+function startBattle(n) {
+  game.players = n;
+  game.mode = n === 4 ? "4p" : "2p";
+  const cfg = BATTLE[n];
+  game.st = Engine.makeBattleState(cfg.rows, cfg.cols, { fill: cfg.fill, players: n });
   buildBoardMeshes();
-  characters.forEach((c) => (c.visible = true));
-  for (const pi of [0, 1]) characters[pi].position.copy(charPosOn(game.st.chars[pi].r, game.st.chars[pi].c));
+  characters.forEach((c, i) => (c.visible = i < n));
+  for (let p = 0; p < n; p++) characters[p].position.copy(charPosOn(game.st.chars[p].r, game.st.chars[p].c));
   clearLocks();
-  setMode2pUI(true);
+  applyModeClass();
   updateHUD();
   requestFrame();
 }
 
 function updateHUD() {
-  if (game.mode === "2p") {
-    document.getElementById("p1score").textContent = game.st.scores[0];
-    document.getElementById("p2score").textContent = game.st.scores[1];
-    document.getElementById("battle-left").textContent = Engine.countDice(game.st);
+  if (isBattle()) {
+    document.getElementById("remain").textContent = Engine.countDice(game.st);
+    for (let p = 0; p < 4; p++) {
+      const el = document.getElementById("score" + p);
+      if (el) el.textContent = p < game.players ? game.st.scores[p] : "";
+    }
     return;
   }
   document.getElementById("level").textContent = game.idx;
@@ -234,9 +238,11 @@ function updateHUD() {
   document.getElementById("par").textContent = game.par;
 }
 
-// toggle which HUD / control set is visible
-function setMode2pUI(is2p) {
-  document.body.classList.toggle("mode-2p", is2p);
+// drive which HUD / pads are visible from the current mode
+function applyModeClass() {
+  document.body.classList.toggle("mode-battle", isBattle());
+  document.body.classList.toggle("mode-2p", game.mode === "2p");
+  document.body.classList.toggle("mode-4p", game.mode === "4p");
 }
 
 // ---- tween manager --------------------------------------------
@@ -385,7 +391,7 @@ function pump() {
   for (let i = 0; i < inputQueue.length; ) {
     const m = inputQueue[i];
     if (busyPlayer[m.player]) { i++; continue; } // this player is still animating
-    const res = game.mode === "2p"
+    const res = isBattle()
       ? Engine.applyBattleMove(game.st, m.player, m.dir)
       : Engine.applyMove(game.st, m.dir);
     if (!res) { inputQueue.splice(i, 1); continue; } // illegal: drop it
@@ -451,15 +457,20 @@ function setupJoystick(padEl, player) {
   padEl.addEventListener("pointerup", end);
   padEl.addEventListener("pointercancel", end);
 }
+// All four pads use the same absolute (push = move) joystick. The opposite-side
+// players' pad ARROWS are rotated 180° in CSS, so operating from their seat is
+// naturally reversed relative to the screen — no direction inversion in code.
 setupJoystick(document.getElementById("pad"), 0);
 setupJoystick(document.getElementById("pad2"), 1);
+setupJoystick(document.getElementById("pad3"), 2);
+setupJoystick(document.getElementById("pad4"), 3);
 
 const KEY0 = { ArrowUp: "north", ArrowDown: "south", ArrowLeft: "west", ArrowRight: "east" };
 const KEY1 = { w: "north", s: "south", a: "west", d: "east" };
 document.addEventListener("keydown", (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (KEY0[k]) { e.preventDefault(); setHeld(0, KEY0[k]); }
-  else if (game.mode === "2p" && KEY1[k]) { e.preventDefault(); setHeld(1, KEY1[k]); }
+  else if (isBattle() && KEY1[k]) { e.preventDefault(); setHeld(1, KEY1[k]); }
 });
 document.addEventListener("keyup", (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -478,7 +489,7 @@ canvas.addEventListener("pointerup", (e) => {
 });
 document.getElementById("reset").addEventListener("click", () => {
   if (anyBusy()) return;
-  if (game.mode === "2p") startBattle(); else loadLevel(game.idx);
+  if (isBattle()) startBattle(game.players); else loadLevel(game.idx);
 });
 
 // ---- overlay / level flow -------------------------------------
@@ -492,7 +503,7 @@ function showOverlay(title, text, btn, onClose) {
   overlay.classList.remove("hidden");
 }
 function modeComplete() {
-  if (game.mode === "2p") battleComplete();
+  if (isBattle()) battleComplete();
   else levelComplete();
 }
 function levelComplete() {
@@ -502,10 +513,16 @@ function levelComplete() {
     showOverlay("LEVEL CLEAR", `최소 ${game.par}수 퍼즐 클리어!`, "다음 레벨", () => loadLevel(game.idx + 1));
   }
 }
+const PLAYER_EMOJI = ["🔴", "🔵", "🟢", "🟡"];
 function battleComplete() {
-  const [a, b] = game.st.scores;
-  const title = a === b ? "무승부!" : (a > b ? "PLAYER 1 승리! 🔴" : "PLAYER 2 승리! 🔵");
-  showOverlay(title, `최종 점수 — P1 ${a} : ${b} P2`, "다시 하기", () => startBattle());
+  const scores = game.st.scores;
+  const top = Math.max(...scores);
+  const winners = scores.map((s, i) => (s === top ? i : -1)).filter((i) => i >= 0);
+  const title = winners.length > 1
+    ? "무승부!"
+    : `PLAYER ${winners[0] + 1} 승리! ${PLAYER_EMOJI[winners[0]]}`;
+  const text = scores.map((s, i) => `${PLAYER_EMOJI[i]} ${s}`).join("   ");
+  showOverlay(title, text, "다시 하기", () => startBattle(game.players));
 }
 
 // ---- main menu -------------------------------------------------
@@ -515,7 +532,8 @@ function showMenu() {
   menu.classList.remove("hidden");
 }
 document.getElementById("menu-1p").addEventListener("click", () => { menu.classList.add("hidden"); loadLevel(1); });
-document.getElementById("menu-2p").addEventListener("click", () => { menu.classList.add("hidden"); startBattle(); });
+document.getElementById("menu-2p").addEventListener("click", () => { menu.classList.add("hidden"); startBattle(2); });
+document.getElementById("menu-4p").addEventListener("click", () => { menu.classList.add("hidden"); startBattle(4); });
 document.getElementById("to-menu").addEventListener("click", () => { if (!anyBusy()) showMenu(); });
 
 // ---- main loop -------------------------------------------------
