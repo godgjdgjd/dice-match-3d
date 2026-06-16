@@ -265,11 +265,12 @@ const ROSTER = [
   { name: "해리포터", emoji: "🧙", make: makeWizard },
 ];
 const picks = [1, 2, 3, 4]; // default: vader / pika / ender / harry
+const CHAR_SCALE = 1.25;    // characters read a bit small on the die otherwise
 let characters = [];
 function buildCharacters() {
   for (const c of characters) { scene.remove(c); disposeMesh(c); }
   characters = picks.map((ri) => ROSTER[ri % ROSTER.length].make());
-  characters.forEach((c) => { c.visible = false; scene.add(c); });
+  characters.forEach((c) => { c.visible = false; c.scale.setScalar(CHAR_SCALE); scene.add(c); });
 }
 
 // ---- game state -----------------------------------------------
