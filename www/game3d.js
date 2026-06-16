@@ -183,20 +183,20 @@ function makePikachu() {
   return g;
 }
 
-// P3 — blocky black dragon with glowing eyes (Minecraft Ender Dragon vibe)
+// P3 — blocky dragon in End-purple with glowing eyes (Minecraft Ender Dragon vibe)
 function makeEnderDragon() {
   const g = new THREE.Group();
-  const blk = lamb(0x0d0d12), wing = lamb(0x1a1a22);
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.2, 0.34), blk);
+  const purple = lamb(0x7b3ff2), lite = lamb(0xa66bff), wing = lamb(0xd14be0);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.2, 0.34), purple);
   body.position.y = 0.18; g.add(body);
-  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.16), blk);
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.16), purple);
   neck.position.set(0, 0.33, 0.12); g.add(neck);
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 0.2), blk);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 0.2), lite);
   head.position.set(0, 0.44, 0.2); g.add(head);
-  const snout = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.12), blk);
+  const snout = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.12), lite);
   snout.position.set(0, 0.4, 0.34); g.add(snout);
   for (const dx of [-0.07, 0.07]) {
-    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.03), glow(0xc24bff));
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.035, 0.03), glow(0x3df0d0));
     eye.position.set(dx, 0.47, 0.3); g.add(eye);
   }
   for (const s of [-1, 1]) {
@@ -206,18 +206,23 @@ function makeEnderDragon() {
   return g;
 }
 
-// P4 — bespectacled young wizard (Harry Potter vibe)
+// P4 — bespectacled young wizard in Gryffindor red + gold (Harry Potter vibe)
 function makeWizard() {
   const g = new THREE.Group();
-  const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.24, 0.32, 16), lamb(0x1c1c24));
+  const red = lamb(0xa01e2e), gold = lamb(0xf2c14e);
+  const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.24, 0.32, 16), red);
   robe.position.y = 0.16; g.add(robe);
-  const scarf = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.135, 0.06, 16), lamb(0x9b1b2e));
+  const trim = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, 0.05, 16), gold);
+  trim.position.y = 0.055; g.add(trim);
+  const scarf = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.135, 0.06, 16), lamb(0xc0392b));
   scarf.position.y = 0.33; g.add(scarf);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 16), lamb(0xe8b58c));
+  const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.138, 0.138, 0.02, 16), gold);
+  stripe.position.y = 0.34; g.add(stripe);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 16), lamb(0xf0bd95));
   head.position.y = 0.46; g.add(head);
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.162, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.62), lamb(0x241509));
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.162, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.62), lamb(0x4a2e16));
   hair.position.y = 0.485; g.add(hair);
-  const frame = lamb(0x111111);
+  const frame = lamb(0x222222);
   for (const dx of [-0.06, 0.06]) {
     const lens = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.008, 8, 16), frame);
     lens.position.set(dx, 0.46, 0.135); g.add(lens);
@@ -226,7 +231,7 @@ function makeWizard() {
   }
   const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.008, 0.008), frame);
   bridge.position.set(0, 0.46, 0.15); g.add(bridge);
-  const wand = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.26, 6), lamb(0x6b4a2b));
+  const wand = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.26, 6), lamb(0x8a5a2b));
   wand.position.set(0.24, 0.3, 0.06); wand.rotation.z = -0.3; g.add(wand);
   return g;
 }
