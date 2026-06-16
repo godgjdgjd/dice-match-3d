@@ -222,18 +222,17 @@
     };
   }
 
-  // nearest remaining (non-excluded) die to relocate a bumped character onto.
-  function findSafeFrom(st, from, exclude) {
-    for (const dir of DIRS) {
-      const [dr, dc] = DELTA[dir];
-      const nr = from.r + dr, nc = from.c + dc;
-      if (nr < 0 || nr >= st.rows || nc < 0 || nc >= st.cols) continue;
-      if (st.board[nr][nc] && !exclude.has(nr * st.cols + nc)) return { r: nr, c: nc };
-    }
+  // Relocate a bumped character onto a RANDOM surviving die. 2P only (battle
+  // mode has no solver), so non-determinism here is fine; 1P keeps the
+  // deterministic findSafe so levels stay solver-verified solvable.
+  function findSafeFrom(st, exclude, rnd) {
+    rnd = rnd || Math.random;
+    const cands = [];
     for (let rr = 0; rr < st.rows; rr++)
       for (let cc = 0; cc < st.cols; cc++)
-        if (st.board[rr][cc] && !exclude.has(rr * st.cols + cc)) return { r: rr, c: cc };
-    return null;
+        if (st.board[rr][cc] && !exclude.has(rr * st.cols + cc)) cands.push({ r: rr, c: cc });
+    if (!cands.length) return null;
+    return cands[(rnd() * cands.length) | 0];
   }
 
   function makeBattleState(rows, cols, opts) {
@@ -302,7 +301,7 @@
       for (let p = 0; p < next.chars.length; p++) {
         const ch = next.chars[p];
         if (exclude.has(ch.r * next.cols + ch.c)) {
-          const safe = findSafeFrom(next, ch, exclude);
+          const safe = findSafeFrom(next, exclude);
           if (safe) { relocations.push({ player: p, from: { ...ch }, to: safe }); next.chars[p] = safe; }
         }
       }
