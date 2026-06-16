@@ -103,11 +103,11 @@
             if (nd && !seen[nr][nc] && nd.top === v) { seen[nr][nc] = true; stack.push([nr, nc]); }
           }
         }
-        // A group of value v clears when its size reaches v. Exception for
-        // v === 1: a die showing 1 only clears when (a) the character is
-        // riding it and (b) it is isolated (no adjacent die). A lone 1 the
-        // character is not standing on must stay, and so must a 1 that has
-        // any neighbour, so neither vanishes on its own.
+        // A group of value v clears only when its size is EXACTLY v — an
+        // over-sized group (v+1 or more) does NOT clear. Exception for v === 1:
+        // a die showing 1 only clears when (a) the character is riding it and
+        // (b) it is isolated (no adjacent die). A lone 1 the character is not
+        // standing on must stay, and so must a 1 that has any neighbour.
         if (v === 1) {
           if (group.length === 1) {
             const [gr, gc] = group[0];
@@ -121,7 +121,7 @@
             }
             if (charOnTop && !hasNeighbour) out.push(...group);
           }
-        } else if (group.length >= v) {
+        } else if (group.length === v) {
           out.push(...group);
         }
       }
