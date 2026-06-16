@@ -124,7 +124,7 @@ html, body {
 #pad3 { left:  max(20px, env(safe-area-inset-left));  top: calc(max(14px, env(safe-area-inset-top)) + 4px); }
 #pad4 { right: max(20px, env(safe-area-inset-right)); top: calc(max(14px, env(safe-area-inset-top)) + 4px); }
 body.mode-battle #pad2 { display: block; }                  /* P2 in all battle modes */
-body.mode-3p #pad3 { display: block; left: 50%; right: auto; transform: translateX(-50%); } /* P3 top-centre in 3P */
+body.mode-3p #pad3 { display: block; }                      /* P3 at its top-left corner in 3P */
 body.mode-4p #pad3, body.mode-4p #pad4 { display: block; }  /* P3/P4 corners in 4P */
 
 .arrows { position: absolute; inset: 0; pointer-events: none; }
@@ -204,39 +204,43 @@ body.mode-battle #hint { display: none; }
   display: none;
 }
 body.mode-battle #remain-chip { display: block; }
-/* in 3P the top-centre is taken by P3's pad, so move the chip to the free top-right */
-body.mode-3p #remain-chip { left: auto; right: max(16px, env(safe-area-inset-right)); transform: none; }
 
-/* main menu */
+/* main menu — scrollable; centred when it fits, scrolls when the screen is short */
 #menu {
-  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  position: fixed; inset: 0; z-index: 20; overflow-y: auto;
   background: radial-gradient(circle at 50% 0%, var(--bg2), var(--bg));
-  z-index: 20;
 }
 #menu.hidden { display: none; }
-.menu-card { text-align: center; padding: 24px; }
-.menu-card h1 { font-size: 40px; margin: 0 0 4px; letter-spacing: 2px; }
-.menu-card h1 span { color: var(--accent); }
-.menu-card p { opacity: 0.7; margin: 0 0 28px; }
-.menu-btn {
-  display: block; width: min(78vw, 320px); margin: 12px auto;
-  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
-  color: var(--text); padding: 16px; border-radius: 18px;
-  font-size: 20px; font-weight: 800;
+.menu-card {
+  min-height: 100%; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 18px 24px;
 }
-.menu-btn small { display: block; font-size: 12px; font-weight: 500; opacity: 0.6; margin-top: 4px; }
+.menu-card h1 { font-size: 32px; margin: 0 0 4px; letter-spacing: 2px; }
+.menu-card h1 span { color: var(--accent); }
+.menu-card p { opacity: 0.7; margin: 0 0 14px; }
+.menu-btn {
+  width: min(78vw, 300px); margin: 6px 0;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+  color: var(--text); padding: 12px; border-radius: 16px;
+  font-size: 18px; font-weight: 800;
+}
+.menu-btn small { display: block; font-size: 11px; font-weight: 500; opacity: 0.6; margin-top: 3px; }
 .menu-btn:active { background: var(--accent); color: #1a1230; transform: scale(0.97); }
 .menu-btn.alt:active { background: rgba(255,255,255,0.18); color: var(--text); }
 #menu-1p[disabled] { opacity: 0.4; pointer-events: none; }
 
-/* character select */
+/* character select — same scroll-or-centre behaviour as the menu */
 #select {
-  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  position: fixed; inset: 0; z-index: 20; overflow-y: auto;
   background: radial-gradient(circle at 50% 0%, var(--bg2), var(--bg));
-  z-index: 20; overflow: auto;
 }
 #select.hidden { display: none; }
-.select-card { text-align: center; padding: 18px 20px; width: min(96vw, 720px); }
+.select-card {
+  min-height: 100%; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 14px 16px; width: min(96vw, 720px); margin: 0 auto;
+}
 .select-card h1 { font-size: 26px; margin: 0 0 14px; letter-spacing: 1px; }
 .select-row {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;

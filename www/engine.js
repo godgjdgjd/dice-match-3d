@@ -248,11 +248,11 @@
     const nDice = Math.max(players, Math.round(rows * cols * fill));
     const filled = cells.slice(0, nDice);
     for (const [r, c] of filled) board[r][c] = randomOrientation(values[(rnd() * values.length) | 0], rnd);
-    // each player starts on the surviving die nearest their seat anchor.
-    // 2P: bottom-left / bottom-right. 3P: + top-centre. 4P: four corners.
+    // each player starts on the surviving die nearest their seat anchor —
+    // always board corners. 2P: bottom row. 3P: + top-left. 4P: four corners.
     const ANCHORS = {
       2: [[rows - 1, 0], [rows - 1, cols - 1]],
-      3: [[rows - 1, 0], [rows - 1, cols - 1], [0, (cols - 1) >> 1]],
+      3: [[rows - 1, 0], [rows - 1, cols - 1], [0, 0]],
       4: [[rows - 1, 0], [rows - 1, cols - 1], [0, 0], [0, cols - 1]],
     };
     const anchors = ANCHORS[players] || ANCHORS[2];
