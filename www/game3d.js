@@ -37,7 +37,8 @@ function placeCamera() {
   // pull back on narrow (portrait) screens so the board width still fits
   const widen = Math.min(1.6, Math.max(1, 1 / aspect));
   const d = camDim * widen;
-  camera.position.set(0, d * 1.3 + 2.5, d * 1.15 + 3);
+  // ZOOM: smaller multipliers = camera closer = board fills more of the screen
+  camera.position.set(0, d * 1.0 + 1.8, d * 0.9 + 2.2);
   camera.lookAt(0, 0, 0);
 }
 

@@ -14,5 +14,8 @@ android/local.properties
 .DS_Store
 *.log
 
+# throwaway QR image generated for sharing the APK link
+apk-qr.png
+
 # NOTE: debug APKs in the repo root (DiceMatch3D-debug.apk) are intentionally
 # committed so they can be downloaded directly from the public repo.

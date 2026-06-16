@@ -97,14 +97,14 @@ html, body {
 .v5 { background: #ef476f; }
 .v6 { background: #9b5de5; }
 
-/* hint — slim banner under the HUD, doesn't block touches */
+/* hint — slim banner clear below the HUD, doesn't block touches */
 #hint {
   position: absolute;
-  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+  top: calc(max(10px, env(safe-area-inset-top)) + 92px);
   left: 50%; transform: translateX(-50%);
   z-index: 4; pointer-events: none;
-  width: min(92vw, 460px); text-align: center;
-  font-size: 12px; line-height: 1.5; opacity: 0.6; margin: 0;
+  width: min(88vw, 520px); text-align: center;
+  font-size: 12px; line-height: 1.4; opacity: 0.5; margin: 0;
 }
 
 /* direction pad — floating joystick-style control in a bottom corner */
