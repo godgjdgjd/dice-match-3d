@@ -11,7 +11,7 @@ const NUM = LEVELS.length;
 
 // ---- THREE setup ----------------------------------------------
 const canvas = document.getElementById("scene");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "low-power" });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 const scene = new THREE.Scene();
@@ -62,6 +62,7 @@ function resize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   placeCamera();
+  requestFrame();
 }
 window.addEventListener("resize", resize);
 
@@ -203,6 +204,7 @@ function loadLevel(idx) {
   clearLocks();
   setMode2pUI(false);
   updateHUD();
+  requestFrame();
 }
 
 // 2P battle: widest recommended board, scattered dice, two players race to
@@ -217,6 +219,7 @@ function startBattle() {
   clearLocks();
   setMode2pUI(true);
   updateHUD();
+  requestFrame();
 }
 
 function updateHUD() {
@@ -403,6 +406,7 @@ function pump() {
       if (heldDir[m.player]) requestMove(m.player, heldDir[m.player]); // keep moving while held
       pump();
     });
+    requestFrame(); // wake the render loop for this move's animation
   }
 }
 
@@ -515,15 +519,23 @@ document.getElementById("menu-2p").addEventListener("click", () => { menu.classL
 document.getElementById("to-menu").addEventListener("click", () => { if (!anyBusy()) showMenu(); });
 
 // ---- main loop -------------------------------------------------
+// Render on demand: the loop only runs while something is animating (tweens
+// present) and stops when the board is still, so an idle game stops driving the
+// GPU. It also parks itself when the app is backgrounded. requestFrame() wakes
+// it after any change (move, level load, resize, returning to foreground).
+let looping = false;
+function requestFrame() {
+  if (!looping && !document.hidden) { looping = true; requestAnimationFrame(animate); }
+}
 function animate(now) {
   for (let i = tweens.length - 1; i >= 0; i--) if (tweens[i].step(now)) tweens.splice(i, 1);
-  if (game.st)
-    for (const pi of activePlayers()) if (!busyPlayer[pi]) characters[pi].position.y = 1.0 + Math.sin(now * 0.004) * 0.04;
   renderer.render(scene, camera);
-  requestAnimationFrame(animate);
+  if (tweens.length && !document.hidden) requestAnimationFrame(animate);
+  else looping = false;
 }
+document.addEventListener("visibilitychange", () => { if (!document.hidden) requestFrame(); });
 
 resize();
 showMenu();
-requestAnimationFrame(animate);
+requestFrame();
 if (NUM === 0) document.getElementById("menu-1p").setAttribute("disabled", "");
